@@ -1,0 +1,11 @@
+ultralytics
+insightface>=2.1
+onnxruntime
+opencv-python
+numpy
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pytest
+requests

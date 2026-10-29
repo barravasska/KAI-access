@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Boarding Scanner - RailGate</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .gate-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .gate-header h1 {
+            margin: 0;
+        }
+
+        .gate-card {
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .scanner-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .train-select-group {
+            background: var(--surface-alt);
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .train-select-group label {
+            margin-top: 0;
+        }
+
+        .camera-corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: var(--orange);
+            border-style: solid;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .corner-tl { top: 14px; left: 14px; border-width: 3px 0 0 3px; }
+        .corner-tr { top: 14px; right: 14px; border-width: 3px 3px 0 0; }
+        .corner-bl { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; }
+        .corner-br { bottom: 14px; right: 14px; border-width: 0 3px 3px 0; }
+
+        .gate-signal {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--surface-alt);
+            color: var(--muted);
+        }
+
+        .gate-signal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .gate-signal.granted .gate-signal-dot {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .gate-signal.denied .gate-signal-dot {
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="speed-stripes">
+        <div class="stripe-navy"></div>
+        <div class="stripe-orange"></div>
+    </div>
+
+    <nav>
+        <a href="/dashboard.html" class="brand">
+            <span class="brand-icon-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="15" rx="3"></rect>
+                    <line x1="8" y1="8" x2="16" y2="8"></line>
+                    <circle cx="8" cy="14" r="1.5" fill="currentColor"></circle>
+                    <circle cx="16" cy="14" r="1.5" fill="currentColor"></circle>
+                    <path d="M7 18 L4 21"></path>
+                    <path d="M17 18 L20 21"></path>
+                </svg>
+            </span>
+            <span>Rail<span class="brand-accent">Gate</span></span>
+        </a>
+
+        <div class="nav-links">
+            <a href="/admin.html">Dashboard Admin</a>
+            <a href="/dashboard.html">Dashboard Utama</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main class="gate-layout">
+        <div class="card gate-card">
+            <div class="gate-header">
+                <div>
+                    <h1>Smart Boarding Gate</h1>
+                    <p style="margin: 0;">Sistem pemindai gerbang otomatis berbasis kecerdasan buatan.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div class="gate-signal" id="signalIndicator">
+                        <span class="gate-signal-dot"></span>
+                        <span id="signalText">STANDBY</span>
+                    </div>
+                    <span class="badge badge-admin">SCANNER ACTIVE</span>
+                </div>
+            </div>
+
+            <div class="train-select-group">
+                <label for="trainId">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="3" width="16" height="15" rx="3"></rect>
+                        <circle cx="8" cy="14" r="1.5" fill="currentColor"></circle>
+                        <circle cx="16" cy="14" r="1.5" fill="currentColor"></circle>
+                    </svg>
+                    Pilih Jadwal Keberangkatan Kereta
+                </label>
+                <select id="trainId" required>
+                    <option value="">Memuat jadwal kereta...</option>
+                </select>
+                <p id="trainStatus" style="font-size: 12px; margin: 6px 0 0; color: var(--muted);"></p>
+            </div>
+
+            <!-- VIEWPORT KAMERA PEMINDAI GERBANG -->
+            <div class="gate-camera" id="cameraBox">
+                <video id="camera" autoplay muted playsinline></video>
+                <canvas id="overlay"></canvas>
+
+                <!-- TARGET CORNER RETICLES -->
+                <div class="camera-corner corner-tl"></div>
+                <div class="camera-corner corner-tr"></div>
+                <div class="camera-corner corner-bl"></div>
+                <div class="camera-corner corner-br"></div>
+
+                <div class="camera-label" id="cameraLabel">
+                    CAMERA OFFLINE
+                </div>
+            </div>
+
+            <div class="scanner-actions">
+                <button id="startBtn" type="button" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Aktifkan Kamera
+                </button>
+
+                <button id="scanBtn" type="button" class="btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                    </svg>
+                    Verifikasi Wajah
+                </button>
+
+                <button id="stopBtn" type="button" class="btn btn-outline">
+                    Matikan Kamera
+                </button>
+            </div>
+
+            <!-- KOTAK STATUS VERIFIKASI BOARDING -->
+            <div class="gate-result" id="resultBox">
+                <h2 id="resultTitle">Menunggu Pemindaian</h2>
+                <p id="resultMessage" style="margin: 0;">
+                    Aktifkan kamera dan arahkan wajah penumpang ke layar pemindai gerbang.
+                </p>
+                <div class="gate-meta" id="resultMeta"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/auth.js"></script>
+    <script>
+        requireLogin();
+
+        async function loadTrainSchedules() {
+            const select = document.getElementById("trainId");
+            const status = document.getElementById("trainStatus");
+
+            try {
+                const trains = await apiRequest("/tickets/trains", { method: "GET" });
+
+                select.innerHTML = '<option value="">-- Pilih Jadwal Kereta --</option>';
+
+                if (!Array.isArray(trains) || trains.length === 0) {
+                    status.textContent = "Belum ada jadwal kereta yang tersedia untuk boarding.";
+                    return;
+                }
+
+                trains.forEach(train => {
+                    const option = document.createElement("option");
+
+                    const departure = new Date(
+                        train.departure_time.endsWith("Z")
+                            ? train.departure_time
+                            : train.departure_time + "Z"
+                    );
+
+                    const formattedDate = departure.toLocaleString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    });
+
+                    option.value = train.id;
+                    option.textContent = `${train.nama_kereta} | ${train.asal} - ${train.tujuan} | ${formattedDate} WIB`;
+                    select.appendChild(option);
+                });
+
+                status.textContent = `${trains.length} jadwal keberangkatan aktif tersedia.`;
+
+            } catch (error) {
+                status.textContent = "Gagal memuat jadwal: " + error.message;
+            }
+        }
+
+        loadTrainSchedules();
+
+        const camera = document.getElementById("camera");
+        const overlay = document.getElementById("overlay");
+        const cameraBox = document.getElementById("cameraBox");
+        const cameraLabel = document.getElementById("cameraLabel");
+
+        const startBtn = document.getElementById("startBtn");
+        const scanBtn = document.getElementById("scanBtn");
+        const stopBtn = document.getElementById("stopBtn");
+
+        const resultBox = document.getElementById("resultBox");
+        const resultTitle = document.getElementById("resultTitle");
+        const resultMessage = document.getElementById("resultMessage");
+        const resultMeta = document.getElementById("resultMeta");
+        const signalIndicator = document.getElementById("signalIndicator");
+        const signalText = document.getElementById("signalText");
+
+        let stream = null;
+        let busy = false;
+
+        function clearOverlay() {
+            const ctx = overlay.getContext("2d");
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+        }
+
+        function setResult(status, message, meta = "") {
+            resultBox.className = "gate-result";
+            cameraBox.className = "gate-camera";
+            signalIndicator.className = "gate-signal";
+
+            if (status === "GRANTED") {
+                resultBox.classList.add("granted");
+                cameraBox.classList.add("granted");
+                signalIndicator.classList.add("granted");
+                signalText.textContent = "OPEN / BOARDING";
+            } else if (status === "DENIED") {
+                resultBox.classList.add("denied");
+                cameraBox.classList.add("denied");
+                signalIndicator.classList.add("denied");
+                signalText.textContent = "LOCKED / DENIED";
+            } else {
+                signalText.textContent = "STANDBY";
+            }
+
+            resultTitle.textContent = status;
+            resultMessage.textContent = message;
+            resultMeta.textContent = meta;
+        }
+
+        function drawBox(bbox, granted, sourceWidth, sourceHeight) {
+            clearOverlay();
+
+            if (!Array.isArray(bbox) || bbox.length !== 4) {
+                return;
+            }
+
+            overlay.width = sourceWidth;
+            overlay.height = sourceHeight;
+
+            const ctx = overlay.getContext("2d");
+            const [x1, y1, x2, y2] = bbox;
+            const mirroredX = sourceWidth - x2;
+
+            ctx.strokeStyle = granted ? "#16a34a" : "#dc2626";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(
+                mirroredX, y1,
+                x2 - x1, y2 - y1
+            );
+        }
+
+        startBtn.addEventListener("click", async () => {
+            try {
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    throw new Error("Browser memerlukan localhost atau protokol HTTPS.");
+                }
+
+                if (stream) return;
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+
+                camera.srcObject = stream;
+                await camera.play();
+
+                cameraLabel.textContent = "CAMERA ACTIVE";
+                scanBtn.disabled = false;
+                startBtn.disabled = true;
+
+                setResult("SIAP VERIFIKASI", "Posisikan wajah penumpang di depan kamera.");
+
+            } catch (error) {
+                setResult("ERROR", error.message);
+            }
+        });
+
+        stopBtn.addEventListener("click", () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            camera.srcObject = null;
+            scanBtn.disabled = true;
+            startBtn.disabled = false;
+            cameraLabel.textContent = "CAMERA OFFLINE";
+
+            clearOverlay();
+            setResult("CAMERA OFFLINE", "Kamera pemindai telah dimatikan.");
+        });
+
+        scanBtn.addEventListener("click", async () => {
+            if (!stream || busy || camera.readyState < 2) {
+                return;
+            }
+
+            const trainId = Number(document.getElementById("trainId").value);
+
+            if (!Number.isInteger(trainId) || trainId < 1) {
+                setResult("ERROR", "Silakan pilih jadwal kereta terlebih dahulu.");
+                return;
+            }
+
+            busy = true;
+            scanBtn.disabled = true;
+            cameraLabel.textContent = "PROCESSING...";
+            clearOverlay();
+
+            try {
+                const snapshot = document.createElement("canvas");
+                snapshot.width = camera.videoWidth;
+                snapshot.height = camera.videoHeight;
+
+                const ctx = snapshot.getContext("2d");
+                ctx.drawImage(camera, 0, 0, snapshot.width, snapshot.height);
+
+                const blob = await new Promise(resolve => {
+                    snapshot.toBlob(resolve, "image/jpeg", 0.88);
+                });
+
+                if (!blob) {
+                    throw new Error("Gagal mengambil frame webcam.");
+                }
+
+                const formData = new FormData();
+                formData.append("train_id", String(trainId));
+                formData.append("file", blob, "scan.jpg");
+
+                const data = await apiRequest("/boarding/scan", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const granted = data.boarding_status === "GRANTED";
+
+                drawBox(
+                    data.bbox,
+                    granted,
+                    snapshot.width,
+                    snapshot.height
+                );
+
+                const status = data.boarding_status;
+                let message = data.message;
+
+                if (
+                    status === "DENIED" &&
+                    data.message === "Tiket sudah digunakan"
+                ) {
+                    message = "Tiket sudah digunakan. Penumpang tidak dapat boarding kembali.";
+                }
+
+                setResult(
+                    status,
+                    message,
+                    `User ID: ${data.user_id ?? "-"} | Similarity: ${data.similarity ?? "-"} | Ticket ID: ${data.ticket_id ?? "-"}`
+                );
+
+                cameraLabel.textContent = granted
+                    ? "BOARDING GRANTED"
+                    : "BOARDING DENIED";
+
+            } catch (error) {
+                setResult("ERROR", error.message);
+                cameraLabel.textContent = "SCAN ERROR";
+            } finally {
+                busy = false;
+                scanBtn.disabled = !stream;
+            }
+        });
+
+        window.addEventListener("pagehide", () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+
+</html>

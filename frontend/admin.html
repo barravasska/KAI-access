@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Boarding - RailGate</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .admin-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            background: #ffffff;
+            border-top-left-radius: var(--radius-lg);
+            border-top-right-radius: var(--radius-lg);
+        }
+
+        .admin-section-header h2 {
+            margin: 0 0 2px;
+            font-size: 18px;
+        }
+
+        .admin-section-header p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        /* KAI MODERN STYLING UNTUK SWEETALERT2 */
+        .swal2-popup {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            border-radius: 16px !important;
+            padding: 28px !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .swal2-title {
+            color: var(--navy) !important;
+            font-weight: 700 !important;
+            font-size: 20px !important;
+            margin-bottom: 8px !important;
+        }
+
+        .swal2-html-container {
+            color: var(--text-secondary) !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+        }
+
+        .swal2-actions {
+            gap: 10px !important;
+            margin-top: 24px !important;
+        }
+
+        .swal2-confirm, .swal2-cancel {
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            padding: 10px 24px !important;
+            min-height: 42px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="speed-stripes">
+        <div class="stripe-navy"></div>
+        <div class="stripe-orange"></div>
+    </div>
+
+    <nav>
+        <a href="/dashboard.html" class="brand">
+            <span class="brand-icon-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="15" rx="3"></rect>
+                    <line x1="8" y1="8" x2="16" y2="8"></line>
+                    <circle cx="8" cy="14" r="1.5" fill="currentColor"></circle>
+                    <circle cx="16" cy="14" r="1.5" fill="currentColor"></circle>
+                    <path d="M7 18 L4 21"></path>
+                    <path d="M17 18 L20 21"></path>
+                </svg>
+            </span>
+            <span>Rail<span class="brand-accent">Gate</span></span>
+        </a>
+
+        <div class="nav-links">
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/scanner.html" class="btn-nav">Boarding Scanner</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main style="width: min(1040px, calc(100% - 40px));">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h1>Panel Administrasi RailGate</h1>
+                <p>Manajemen akun penumpang, pemantauan data biometrik, dan riwayat verifikasi boarding gerbang stasiun.</p>
+            </div>
+            <a href="/scanner.html" class="btn" style="width: auto; min-width: 200px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                </svg>
+                Buka Boarding Scanner
+            </a>
+        </div>
+
+        <!-- STAT KARTU RINGKASAN ADMIN -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 22px;">
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em;">Total Pengguna</div>
+                <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+                    <strong id="statTotalUsers" style="color: var(--navy); font-size: 20px;">-</strong>
+                    <span style="font-size: 12px; color: var(--muted);">penumpang</span>
+                </div>
+            </div>
+
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em;">Status Gerbang</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green);"></span>
+                    <strong style="color: var(--navy); font-size: 14px;">ONLINE & AKTIF</strong>
+                </div>
+            </div>
+
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em;">Model AI Biometrik</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                    <strong style="color: var(--navy); font-size: 15px;">YOLOv8 + ArcFace</strong>
+                </div>
+            </div>
+
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em;">Ambang Batas Verifikasi</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                    <strong style="color: var(--orange); font-size: 15px;">Cosine &ge; 0.40</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- KARTU 1: DAFTAR AKUN PENGGUNA DENGAN TOMBOL HAPUS AKUN -->
+        <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 26px;">
+            <div class="admin-section-header">
+                <div>
+                    <h2>Daftar Akun Pengguna</h2>
+                    <p>Manajemen akun penumpang terdaftar di sistem RailGate.</p>
+                </div>
+                <button type="button" onclick="loadUsers()" class="btn btn-outline" style="width: auto; min-height: 32px; padding: 4px 12px; font-size: 12px;">
+                    Segarkan Data
+                </button>
+            </div>
+
+            <div class="table-wrapper" style="border: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Nama Lengkap</th>
+                            <th>Alamat Email</th>
+                            <th>Peran</th>
+                            <th>Biometrik Wajah</th>
+                            <th>Waktu Daftar</th>
+                            <th style="text-align: right; width: 130px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 32px; color: var(--muted);">
+                                Memuat daftar akun pengguna...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- KARTU 2: RIWAYAT AKTIVITAS BOARDING -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="admin-section-header">
+                <div>
+                    <h2>Riwayat Aktivitas Boarding</h2>
+                    <p>Log pencatatan verifikasi biometrik penumpang di gerbang stasiun.</p>
+                </div>
+                <button type="button" onclick="loadLogs()" class="btn btn-outline" style="width: auto; min-height: 32px; padding: 4px 12px; font-size: 12px;">
+                    Segarkan Log
+                </button>
+            </div>
+
+            <div class="table-wrapper" style="border: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Waktu Scan</th>
+                            <th>User ID</th>
+                            <th>Tiket ID</th>
+                            <th>Status Verifikasi</th>
+                            <th>Alasan Keputusan</th>
+                            <th>Kemiripan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 32px; color: var(--muted);">
+                                Memuat riwayat aktivitas boarding...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="message" style="margin: 16px;"></p>
+        </div>
+    </main>
+
+    <script src="/static/js/auth.js"></script>
+    <script>
+        requireLogin();
+
+        async function deleteUser(userId, userName) {
+            const swalResult = await Swal.fire({
+                title: 'Konfirmasi Hapus Akun',
+                html: `Apakah Anda yakin ingin menghapus akun <strong>"${userName}"</strong>?<br><br>` +
+                      `<span style="font-size: 13px; color: #dc2626; line-height: 1.5; display: inline-block;">` +
+                      `Semua tiket dan data biometrik wajah pengguna ini juga akan dihapus permanen.<br>` +
+                      `Tindakan ini tidak dapat dibatalkan.` +
+                      `</span>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#0f2a4a',
+                confirmButtonText: 'Ya, Hapus Akun',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true
+            });
+
+            if (!swalResult.isConfirmed) return;
+
+            try {
+                // Tampilkan indikator proses
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Sedang menghapus akun dan membersihkan data terkait...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const result = await apiRequest(
+                    `/auth/admin/users/${userId}`,
+                    { method: "DELETE" }
+                );
+
+                await Swal.fire({
+                    title: 'Berhasil Dihapus',
+                    text: result.message,
+                    icon: 'success',
+                    confirmButtonColor: '#f47721',
+                    confirmButtonText: 'Selesai'
+                });
+
+                // Perbarui tabel pengguna setelah berhasil
+                if (typeof loadUsers === "function") {
+                    await loadUsers();
+                } else {
+                    location.reload();
+                }
+
+            } catch (error) {
+                Swal.fire({
+                    title: 'Gagal Menghapus Akun',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#0f2a4a',
+                    confirmButtonText: 'Tutup'
+                });
+            }
+        }
+
+        async function loadUsers() {
+            const tbody = document.getElementById("usersTableBody");
+            const statTotalUsers = document.getElementById("statTotalUsers");
+
+            try {
+                const users = await apiRequest("/auth/admin/users");
+                tbody.replaceChildren();
+
+                if (statTotalUsers) {
+                    statTotalUsers.textContent = users.length;
+                }
+
+                if (!users.length) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td colspan="7" style="text-align: center; padding: 36px; color: var(--muted);">
+                            Belum ada akun pengguna terdaftar.
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                for (const user of users) {
+                    const row = document.createElement("tr");
+
+                    const roleBadgeClass = user.role === "admin" ? "badge-admin" : "badge";
+                    const roleBadgeStyle = user.role === "admin" ? "" : "background: var(--surface-alt); color: var(--navy);";
+
+                    const faceBadgeClass = user.has_face ? "badge-granted" : "badge";
+                    const faceBadgeStyle = user.has_face ? "" : "background: #f1f5f9; color: var(--muted);";
+                    const faceBadgeText = user.has_face ? "TERDAFTAR" : "BELUM";
+
+                    let formattedDate = "-";
+                    if (user.created_at) {
+                        const date = new Date(
+                            user.created_at.endsWith("Z")
+                                ? user.created_at
+                                : user.created_at + "Z"
+                        );
+                        formattedDate = date.toLocaleDateString("id-ID", {
+                            timeZone: "Asia/Jakarta",
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric"
+                        });
+                    }
+
+                    const safeName = user.nama.replace(/'/g, "\\'");
+
+                    let actionHtml = "";
+                    if (user.role === "admin") {
+                        actionHtml = `
+                            <span class="badge badge-admin" style="font-size: 11px;">
+                                AKUN ADMIN
+                            </span>
+                        `;
+                    } else {
+                        actionHtml = `
+                            <button
+                                type="button"
+                                class="btn-delete"
+                                onclick="deleteUser(${user.id}, '${safeName}')">
+                                Hapus Akun
+                            </button>
+                        `;
+                    }
+
+                    row.innerHTML = `
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted);">${user.id}</td>
+                        <td><strong>${user.nama}</strong></td>
+                        <td>${user.email}</td>
+                        <td><span class="badge ${roleBadgeClass}" style="${roleBadgeStyle}">${user.role.toUpperCase()}</span></td>
+                        <td><span class="badge ${faceBadgeClass}" style="${faceBadgeStyle}">${faceBadgeText}</span></td>
+                        <td style="font-size: 12px; color: var(--muted);">${formattedDate}</td>
+                        <td style="text-align: right;">${actionHtml}</td>
+                    `;
+
+                    tbody.appendChild(row);
+                }
+
+            } catch (error) {
+                console.error("Gagal memuat pengguna:", error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 24px; color: var(--red);">
+                            Gagal memuat daftar pengguna: ${error.message}.<br>
+                            <span style="font-size: 12px; color: var(--muted);">Pastikan terminal backend (uvicorn) sudah di-restart agar endpoint baru aktif.</span>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function loadLogs() {
+            const tbody = document.getElementById("logsTableBody");
+
+            try {
+                const logs = await apiRequest("/boarding/logs");
+                tbody.replaceChildren();
+
+                if (!logs.length) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td colspan="6" style="text-align: center; padding: 36px; color: var(--muted);">
+                            Belum ada riwayat aktivitas boarding yang tercatat.
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                for (const log of logs) {
+                    const row = document.createElement("tr");
+
+                    const isGranted = log.result === "GRANTED";
+                    const badgeClass = isGranted ? "badge-granted" : "badge-denied";
+
+                    let formattedTime = "-";
+                    if (log.scan_time) {
+                        const date = new Date(
+                            log.scan_time.endsWith("Z")
+                                ? log.scan_time
+                                : log.scan_time + "Z"
+                        );
+                        formattedTime = date.toLocaleString("id-ID", {
+                            timeZone: "Asia/Jakarta",
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false
+                        });
+                    }
+
+                    const similarityText = typeof log.similarity === "number"
+                        ? (log.similarity * 100).toFixed(1) + "%"
+                        : "-";
+
+                    row.innerHTML = `
+                        <td style="white-space: nowrap; font-size: 12px; font-family: 'JetBrains Mono', monospace;">${formattedTime}</td>
+                        <td><strong>${log.user_id ?? "Unknown"}</strong></td>
+                        <td>${log.ticket_id ?? "-"}</td>
+                        <td><span class="badge ${badgeClass}">${log.result}</span></td>
+                        <td>${log.reason ?? "-"}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace;">${similarityText}</td>
+                    `;
+
+                    tbody.appendChild(row);
+                }
+
+            } catch (error) {
+                showMessage("message", error.message);
+            }
+        }
+
+        loadUsers();
+        loadLogs();
+    </script>
+</body>
+
+</html>

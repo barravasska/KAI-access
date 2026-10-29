@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pemesanan Tiket - RailGate</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="speed-stripes">
+        <div class="stripe-navy"></div>
+        <div class="stripe-orange"></div>
+    </div>
+
+    <nav>
+        <a href="/dashboard.html" class="brand">
+            <span class="brand-icon-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="16" height="15" rx="3"></rect>
+                    <line x1="8" y1="8" x2="16" y2="8"></line>
+                    <circle cx="8" cy="14" r="1.5" fill="currentColor"></circle>
+                    <circle cx="16" cy="14" r="1.5" fill="currentColor"></circle>
+                    <path d="M7 18 L4 21"></path>
+                    <path d="M17 18 L20 21"></path>
+                </svg>
+            </span>
+            <span>Rail<span class="brand-accent">Gate</span></span>
+        </a>
+
+        <div class="nav-links">
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/booking.html" class="active">Pesan Tiket</a>
+            <a href="/my-tickets.html">Tiket Saya</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="page-header">
+            <h1>Reservasi Tiket Kereta Api</h1>
+            <p>Pilih perjalanan yang tersedia untuk membuat tiket dan mengaktifkan akses gerbang boarding.</p>
+        </div>
+
+        <div class="card">
+            <!-- HEADER DEKORATIF RESERVASI -->
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light);">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0 0 2px;">Formulir Pemesanan Perjalanan</h3>
+                    <span style="font-size: 12px; color: var(--muted);">Pilih jadwal keberangkatan kereta yang tersedia</span>
+                </div>
+            </div>
+
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="trainId">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="3" width="16" height="15" rx="3"></rect>
+                            <circle cx="8" cy="14" r="1.5" fill="currentColor"></circle>
+                            <circle cx="16" cy="14" r="1.5" fill="currentColor"></circle>
+                        </svg>
+                        Jadwal Kereta & Rute Keberangkatan
+                    </label>
+                    <select id="trainId" required>
+                        <option value="">Memuat jadwal kereta...</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Konfirmasi & Buat Tiket
+                </button>
+            </form>
+
+            <p id="message"></p>
+        </div>
+
+        <!-- FITUR KEUNGGULAN PERJALANAN KAI -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 14px;">
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="icon-box icon-box-navy" style="width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 13px; color: var(--navy);">Validasi Otomatis</div>
+                        <div style="font-size: 11px; color: var(--muted);">Terhubung ke gerbang scan</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="icon-box icon-box-green" style="width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 13px; color: var(--navy);">Boarding Cepat</div>
+                        <div style="font-size: 11px; color: var(--muted);">Tanpa cetak boarding pass</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-compact" style="margin-bottom: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="icon-box" style="width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 13px; color: var(--navy);">Jadwal Tepat Waktu</div>
+                        <div style="font-size: 11px; color: var(--muted);">Waktu standar WIB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/auth.js"></script>
+    <script>
+        requireLogin();
+
+        async function loadTrains() {
+            const select = document.getElementById("trainId");
+
+            try {
+                const trains = await apiRequest("/tickets/trains");
+
+                select.replaceChildren();
+
+                if (!trains.length) {
+                    const emptyOption = document.createElement("option");
+                    emptyOption.value = "";
+                    emptyOption.textContent = "Tidak ada jadwal kereta tersedia";
+                    select.appendChild(emptyOption);
+                    showMessage("message", "Belum ada jadwal kereta yang dapat dipesan saat ini.");
+                    return;
+                }
+
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "-- Pilih Kereta & Jadwal --";
+                select.appendChild(defaultOption);
+
+                for (const train of trains) {
+                    const option = document.createElement("option");
+                    option.value = train.id;
+
+                    const departure = new Date(
+                        train.departure_time.endsWith("Z")
+                            ? train.departure_time
+                            : train.departure_time + "Z"
+                    );
+
+                    const formattedDate = departure.toLocaleString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    });
+
+                    option.textContent =
+                        `${train.nama_kereta} | ${train.asal} - ${train.tujuan} | ${formattedDate} WIB`;
+
+                    select.appendChild(option);
+                }
+            } catch (error) {
+                showMessage("message", error.message);
+            }
+        }
+
+        document.getElementById("bookingForm")
+            .addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const trainId = Number(
+                    document.getElementById("trainId").value
+                );
+
+                if (!trainId) return;
+
+                try {
+                    const ticket = await apiRequest("/tickets/book", {
+                        method: "POST",
+                        body: JSON.stringify({ train_id: trainId })
+                    });
+
+                    showMessage(
+                        "message",
+                        `Tiket berhasil dipesan! Kode Booking: ${ticket.booking_code}`,
+                        true
+                    );
+
+                    setTimeout(() => {
+                        window.location.href = "/my-tickets.html";
+                    }, 1200);
+
+                } catch (error) {
+                    showMessage("message", error.message);
+                }
+            });
+
+        loadTrains();
+    </script>
+</body>
+
+</html>
